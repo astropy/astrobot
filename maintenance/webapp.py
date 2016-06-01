@@ -1,5 +1,7 @@
 import os
 import re
+import time
+
 from flask import Flask, request
 from github import Github
 
@@ -26,6 +28,10 @@ def find_prs_in_changelog(content):
 
 @app.route("/hook", methods=['POST'])
 def hook():
+
+    # We need to make sure we don't reply too quickly, to make sure the comment
+    # ends up below the merge message.
+    time.sleep(2)
 
     # Only check pull requests
     if request.headers['X-GitHub-Event'] != 'pull_request':
@@ -71,18 +77,18 @@ def hook():
         for issue in issues:
             message += "* {0}\n".format(issue)
 
-        message += "\nWould it be possible to fix these? Thanks!\n"
+        message += "\nWould it be possible to fix these? Thanks! \n"
 
         if len(issues) == 1:
             message = message.replace('issues with', 'issue with').replace('fix these', 'fix this')
 
+        pr.create_issue_comment(message)
+
+        return message
+
     else:
 
-        message = "@{0} - all good!⭐️\n".format(merged_by)
-
-    pr.create_issue_comment(message)
-
-    return message
+        return "All good!"
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
