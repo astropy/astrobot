@@ -64,7 +64,7 @@ def hook():
     if 'no-changelog-entry-needed' in labels:
         if changelog_entry:
             issues.append("Changelog entry present but **no-changelog-entry-needed** label set")
-    if 'affects-dev' in labels:
+    elif 'affects-dev' in labels:
         if changelog_entry:
             issues.append("Changelog entry present but **affects-dev** label set")
     else:
