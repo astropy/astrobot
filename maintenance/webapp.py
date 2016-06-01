@@ -1,4 +1,5 @@
 import os
+import re
 from flask import Flask, request
 from github import Github
 
@@ -7,6 +8,21 @@ GITHUB_API_URL = 'https://api.github.com/'
 app = Flask(__name__)
 
 GITHUB_TOKEN = os.environ['GITHUB_TOKEN']
+
+BLOCK_PATTERN = re.compile('\[#.+\]', flags=re.DOTALL)
+ISSUE_PATTERN = re.compile('#[0-9]+')
+
+
+def find_prs_in_changelog(content):
+    issue_numbers = []
+    for block in BLOCK_PATTERN.finditer(content):
+        block_start, block_end = block.start(), block.end()
+        block = content[block_start:block_end]
+        for m in ISSUE_PATTERN.finditer(block):
+            start, end = m.start(), m.end()
+            issue_numbers.append(int(block[start:end][1:]))
+    return issue_numbers
+
 
 @app.route("/hook", methods=['POST'])
 def hook():
@@ -21,10 +37,33 @@ def hook():
 
     merged_by = request.json['pull_request']['merged_by']['login']
 
+    gh = Github(login_or_token=GITHUB_TOKEN)
+    repo = gh.get_repo('astrofrog/testrepo')
+    pr = repo.get_pull(int(request.json['number']))
+
     issues = []
 
     if request.json['pull_request']['milestone'] is None:
         issues.append("The milestone has not been set")
+
+    issue = repo.get_issue(pr.number)
+    labels = [label.name for label in issue.labels]
+
+    changelog_entry = False
+    for fl in pr.get_files():
+        if fl.filename == 'CHANGES.rst':
+            numbers = find_prs_in_changelog(fl.patch)
+            changelog_entry = pr.number in numbers
+
+    if 'no-changelog-entry-needed' in labels:
+        if changelog_entry:
+            issues.append("Changelog entry present but no-changelog-entry-needed label set")
+    if 'affects-dev' in labels:
+        if changelog_entry:
+            issues.append("Changelog entry present but affects-dev label set")
+    else:
+        if not changelog_entry:
+            issues.append("Changelog entry not present (or pull request number missing) and neither affects-dev nor no-changelog-entry-needed are set")
 
     if len(issues) > 0:
 
@@ -38,9 +77,6 @@ def hook():
 
         message = "@{0} - all good!⭐️\n".format(merged_by)
 
-    GITHUB = Github(login_or_token=GITHUB_TOKEN)
-    REPO = GITHUB.get_repo('astrofrog/testrepo')
-    pr = REPO.get_pull(int(request.json['number']))
     pr.create_issue_comment(message)
 
     return message
