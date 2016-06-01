@@ -57,21 +57,24 @@ def hook():
 
     if 'no-changelog-entry-needed' in labels:
         if changelog_entry:
-            issues.append("Changelog entry present but no-changelog-entry-needed label set")
+            issues.append("Changelog entry present but **no-changelog-entry-needed** label set")
     if 'affects-dev' in labels:
         if changelog_entry:
-            issues.append("Changelog entry present but affects-dev label set")
+            issues.append("Changelog entry present but **affects-dev** label set")
     else:
         if not changelog_entry:
-            issues.append("Changelog entry not present (or pull request number missing) and neither affects-dev nor no-changelog-entry-needed are set")
+            issues.append("Changelog entry not present (or pull request number missing) and neither the **affects-dev** nor the **no-changelog-entry-needed** label are set")
 
     if len(issues) > 0:
 
-        message = "@{0} - I noticed the following issues with this merged pull request:\n\n".format(merged_by)
+        message = "@{0} - thanks for merging this! However, I noticed the following issues with this pull request:\n\n".format(merged_by)
         for issue in issues:
             message += "* {0}\n".format(issue)
 
-        message += "\nPlease fix these - thanks!\n"
+        message += "\nWould it be possible to fix these? Thanks!\n"
+
+        if len(issues) == 1:
+            message = message.replace('issues with', 'issue with').replace('fix these', 'fix this')
 
     else:
 
