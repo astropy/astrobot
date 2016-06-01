@@ -64,12 +64,12 @@ def hook():
     if 'no-changelog-entry-needed' in labels:
         if changelog_entry:
             issues.append("Changelog entry present but **no-changelog-entry-needed** label set")
-    elif 'affects-dev' in labels:
+    elif 'Affects-dev' in labels:
         if changelog_entry:
-            issues.append("Changelog entry present but **affects-dev** label set")
+            issues.append("Changelog entry present but **Affects-dev** label set")
     else:
         if not changelog_entry:
-            issues.append("Changelog entry not present (or pull request number missing) and neither the **affects-dev** nor the **no-changelog-entry-needed** label are set")
+            issues.append("Changelog entry not present (or pull request number missing) and neither the **Affects-dev** nor the **no-changelog-entry-needed** label are set")
 
     if len(issues) > 0:
 
