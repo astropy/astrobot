@@ -44,7 +44,7 @@ def hook():
     merged_by = request.json['pull_request']['merged_by']['login']
 
     gh = Github(login_or_token=GITHUB_TOKEN)
-    repo = gh.get_repo('astrofrog/testrepo')
+    repo = gh.get_repo(request.json['pull_request']['head']['full_name'])
     pr = repo.get_pull(int(request.json['number']))
 
     issues = []
