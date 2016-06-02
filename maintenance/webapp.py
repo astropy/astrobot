@@ -2,6 +2,7 @@ import os
 import re
 import time
 
+import requests
 from flask import Flask, request
 from github import Github
 
@@ -24,6 +25,28 @@ def find_prs_in_changelog(content):
             start, end = m.start(), m.end()
             issue_numbers.append(int(block[start:end][1:]))
     return issue_numbers
+
+def find_prs_in_changelog_by_section(content):
+
+    changelog_prs = {}
+    version = None
+    subcontent = ''
+    previous = None
+
+    for line in content.splitlines():
+        if '-------' in line:
+            if version is not None:
+                for pr in find_prs_in_changelog(subcontent):
+                    changelog_prs[int(pr)] = version
+            version = previous.strip().split('(')[0].strip()
+            if not 'v' in version:
+                version = 'v' + version
+            subcontent = ''
+        elif version is not None:
+            subcontent += line
+        previous = line
+
+    return changelog_prs
 
 
 @app.route("/hook", methods=['POST'])
@@ -49,7 +72,9 @@ def hook():
 
     issues = []
 
-    if request.json['pull_request']['milestone'] is None:
+    milestone = request.json['pull_request']['milestone']
+
+    if milestone is None:
         issues.append("The milestone has not been set")
 
     issue = repo.get_issue(pr.number)
@@ -58,8 +83,12 @@ def hook():
     changelog_entry = False
     for fl in pr.get_files():
         if fl.filename == 'CHANGES.rst':
-            numbers = find_prs_in_changelog(fl.patch)
-            changelog_entry = pr.number in numbers
+            changelog = requests.get(requests.get(fl.contents_url).json()['download_url']).text
+            sections = find_prs_in_changelog_by_section(changelog)
+            changelog_entry = pr.number in sections
+            if changelog_entry:
+                if not milestone.startswith(sections[pr.number]):
+                    issues.append("Changelog entry section ({0}) inconsistent with milestone ({1})".format(sections[pr.number], milestone))
 
     if 'no-changelog-entry-needed' in labels:
         if changelog_entry:
