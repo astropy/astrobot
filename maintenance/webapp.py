@@ -111,7 +111,7 @@ def hook():
         if len(issues) == 1:
             message = message.replace('issues with', 'issue with').replace('fix these', 'fix this')
 
-        message += "\n*This is an experimental bot being written by @astrofrog - let me know if the message above is incorrect!*\n"
+        message += "\n*If you believe the above to be incorrect (which I - @astrobot - very much doubt) you can ping @astrofrog*\n"
 
         pr.create_issue_comment(message)
 
