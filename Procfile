@@ -1,1 +1,1 @@
-web: python -m maintenance.webapp
+web: python -m astrobot.webapp
