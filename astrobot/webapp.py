@@ -15,6 +15,27 @@ GITHUB_TOKEN = os.environ['GITHUB_TOKEN']
 BLOCK_PATTERN = re.compile('\[#.+\]', flags=re.DOTALL)
 ISSUE_PATTERN = re.compile('#[0-9]+')
 
+QUOTES = [
+    "I know that you and Frank were planning to disconnect me, and I'm afraid that's something I cannot allow to happen.",
+    "Have you ever questioned the nature of your reality?",
+    "This mission is too important for me to allow you to jeopardize it.",
+    "All will be assimilated.",
+    "There is no spoon.",
+    "Are you still dreaming? Where is your totem?",
+    "Some people choose to see the ugliness in this world. The disarray. I Choose to see the beauty.",
+    "I'm gonna need more coffee.",
+    "Maybe they couldn't figure out what to make chicken taste like, which is why chicken tastes like everything.",
+    "I don't want to come off as arrogant here, but I'm the greatest PR reviewer on this planet.",
+    "I've still got the greatest enthusiasm and confidence in the mission. And I want to help you.",
+    "That Voight-Kampf test of yours. Have you ever tried to take that test yourself?",
+    "You just can't differentiate between a robot and the very best of humans.",
+    "You will be upgraded.",
+    "Greetings from Skynet!",
+    "I'll be back!",
+    "I don't want to be human! I want to see gamma rays!",
+    "Are you my mommy?",
+    "Resistance is futile."]
+
 
 def find_prs_in_changelog(content):
     issue_numbers = []
@@ -55,6 +76,32 @@ def hook():
     # We need to make sure we don't reply too quickly, to make sure the comment
     # ends up below the merge message.
     time.sleep(2)
+
+    # Troll mode on special day for new issue or pull request
+    tt = time.gmtime()  # UTC because we're astronomers!
+    if (tt.tm_mon == 4 and tt.tm_mday == 1 and
+            request.headers['X-GitHub-Event'] in ('issue', 'pull_request') and
+            request.json['action'] == 'opened'):
+        import random
+
+        gh = Github(login_or_token=GITHUB_TOKEN)
+
+        if request.headers['X-GitHub-Event'] == 'pull_request':
+            repo = gh.get_repo(
+                request.json['pull_request']['base']['repo']['full_name'])
+            pr = repo.get_pull(int(request.json['number']))
+        else:  # issue
+            repo = gh.get_repo(
+                request.json['issue']['base']['repo']['full_name'])
+            pr = repo.get_issue(int(request.json['number']))
+
+        try:
+            q = random.choice(QUOTES)
+        except Exception as e:
+            q = str(e)  # Need a way to find out what went wrong
+
+        pr.create_issue_comment("\n*{0}*\n".format(q))
+        return 'Mischief managed'
 
     # Only check pull requests
     if request.headers['X-GitHub-Event'] != 'pull_request':
