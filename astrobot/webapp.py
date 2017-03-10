@@ -113,6 +113,18 @@ def hook():
 
         message += "\n*If you believe the above to be incorrect (which I - @astrobot - very much doubt) you can ping @astrofrog*\n"
 
+        tt = time.gmtime()  # UTC because we're astronomers!
+        if tt.tm_mon == 4 and tt.tm_mday == 1:
+            import random
+            try:
+                with open('quotes.txt') as fin:
+                    quotes = fin.readlines()
+                q = random.choice(quotes).strip()
+            except Exception:
+                pass
+            else:
+                message += "\n*p.s. {0}*\n".format(q)
+
         pr.create_issue_comment(message)
 
         return message
