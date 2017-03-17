@@ -135,7 +135,7 @@ def hook():
         message += "\n*If you believe the above to be incorrect (which I - @astrobot - very much doubt) you can ping @astrofrog*\n"
 
         tt = time.gmtime()  # UTC because we're astronomers!
-        if tt.tm_mon == 3 and tt.tm_mday == 17:  # TODO: Change back to Apr 1
+        if tt.tm_mon == 4 and tt.tm_mday == 1:
             import random
             try:
                 q = random.choice(QUOTES)
