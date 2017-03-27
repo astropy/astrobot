@@ -77,6 +77,33 @@ def hook():
     # ends up below the merge message.
     time.sleep(2)
 
+    # Troll mode on special day for new issue or pull request
+    tt = time.gmtime()  # UTC because we're astronomers!
+    # TODO: After test, change to tt.tm_mon == 4 and tt.tm_mday == 1
+    if (tt.tm_mon == 3 and tt.tm_mday > 26 and
+            request.headers['X-GitHub-Event'] in ('issue', 'pull_request') and
+            request.json['action'] == 'opened'):
+        import random
+
+        gh = Github(login_or_token=GITHUB_TOKEN)
+
+        if request.headers['X-GitHub-Event'] == 'pull_request':
+            repo = gh.get_repo(
+                request.json['pull_request']['base']['repo']['full_name'])
+            pr = repo.get_pull(int(request.json['number']))
+        else:  # issue
+            repo = gh.get_repo(
+                request.json['issue']['base']['repo']['full_name'])
+            pr = repo.get_issue(int(request.json['number']))
+
+        try:
+            q = random.choice(QUOTES)
+        except Exception as e:
+            q = str(e)  # Need a way to find out what went wrong
+
+        pr.create_issue_comment("\n*{0}*\n".format(q))
+        return 'Mischief managed'
+
     # Only check pull requests
     if request.headers['X-GitHub-Event'] != 'pull_request':
         return 'No action needed'
@@ -133,15 +160,6 @@ def hook():
             message = message.replace('issues with', 'issue with').replace('fix these', 'fix this')
 
         message += "\n*If you believe the above to be incorrect (which I - @astrobot - very much doubt) you can ping @astrofrog*\n"
-
-        tt = time.gmtime()  # UTC because we're astronomers!
-        if tt.tm_mon == 4 and tt.tm_mday == 1:
-            import random
-            try:
-                q = random.choice(QUOTES)
-            except Exception as e:
-                q = str(e)  # Need a way to find out what went wrong
-            message += "\n*p.s. {0}*\n".format(q)
 
         pr.create_issue_comment(message)
 
